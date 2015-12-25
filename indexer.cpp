@@ -3,10 +3,116 @@
 #include <memory>
 #include <algorithm>
 #include <iterator>
-#include <set>
 
 const int get_c_string(PyObject *str, char* &ref);
 const unsigned long hash_of_string(const char *c_str, const unsigned int len);
+
+PyObject *
+n_gramm::search(PyObject *pattern)
+{
+	char *c_str;
+	const int size = get_c_string(pattern, c_str);
+	CSTRList substrs;
+	CSTRList n_gramms;
+	select_substrs(n_gramms, substrs, c_str, size);
+
+	PyObject *result = PyList_New(0);
+	if (n_gramms.empty()) {
+		return result;
+	}
+
+	std::sort(n_gramms.begin(), n_gramms.end(), [](const CSTR &lhs, const CSTR &rhs) {
+		return lhs.second < rhs.second;
+	});
+
+	IndexResultSet intersection;
+	bool is_init_intersection = true;
+
+	for (auto &p : n_gramms) {
+		const char *c = p.first;
+		const unsigned int len = p.second;
+		auto range = indexes_[len - 1].equal_range(hash_of_string(c, len));
+
+		if (!std::distance(range.first, range.second)) {
+			return result;
+		}
+
+		for (auto it = range.first; it != range.second; it++) {
+			auto s = it->second.second;
+			char *c_str;
+			get_c_string(s, c_str);
+		}
+
+		if (is_init_intersection) {
+			for (auto it = range.first; it != range.second; it++) {
+				const IndexResult &el = *it;
+				intersection.insert(el);
+			}
+			is_init_intersection = false;
+			continue;
+		}
+
+		for (auto it = intersection.begin(); it != intersection.end(); it++) {
+			const IndexResult &el = *it;
+			bool is_there = false;
+			for (auto it = range.first; it != range.second; it++)
+				if (it->second == el.second) {
+					is_there = true;
+					break;
+				}
+			if (!is_there)
+				intersection.erase(el);
+		}
+
+
+		if (intersection.empty()) {
+			return result;
+		}
+	}
+
+	unsigned int i = 0;
+	for (auto &p : intersection) {
+		PyObject *str = p.second.second;
+		char * c_str;
+		const unsigned int size = get_c_string(str, c_str);
+		if (!is_real_substrs(substrs, c_str, size))
+			continue;
+
+		PyObject * tuple = PyTuple_New(2);
+		PyTuple_SetItem(tuple, 0, p.second.first);
+		PyTuple_SetItem(tuple, 1, str);
+		PyList_Insert(result, i++, tuple);
+	}
+
+	return result;
+}
+
+
+bool n_gramm::is_real_substrs(CSTRList &substrs, char * c_str, const unsigned int size)
+{
+	bool is_there = true;
+	if (substrs.size() > 1) {
+		is_there = true;
+		unsigned int offset = 0;
+		for (const auto &p : substrs) {
+			is_there = false;
+			char *c_sub = p.first;
+			unsigned int len = p.second;
+			while (offset + len <= size) {
+				if (std::equal(c_str + offset, c_str + offset + len, c_sub)) {
+					is_there = true;
+					offset += len;
+					break;
+				}
+				offset++;
+			}
+			if (!is_there)
+				break;
+		}
+	}
+
+	return is_there;
+}
 
 void 
 n_gramm::add_line(PyObject *index, PyObject *str)
@@ -25,78 +131,32 @@ n_gramm::add_to_index(PyObject *str, IndexValue &value)
 	char *c_str;
 	const unsigned int size = get_c_string(str, c_str);
 	for (unsigned int pos = 0; pos < size; pos++)
-		for (unsigned int len = 1; pos + len <= size && len <= n_count_; len++)
-			indexes_[len].insert(make_pair(hash_of_string(&c_str[pos], len), value));
+		for (unsigned int len = 1; pos + len <= size && len <= n_count_; len++) {
+			HashLongPyObject &hash_map = indexes_[len - 1];
+			IndexKey hash = hash_of_string(&c_str[pos], len);
+			auto range = hash_map.equal_range(hash);
+			bool is_duplicate = false;
+			for (auto it = range.first; it != range.second; ++it) {
+				if (it->second.first == value.first && it->second.second == value.second)
+					is_duplicate = true;
+			}
+			if (!is_duplicate)
+				hash_map.insert(make_pair(hash, value));
+		}
 }
-
-PyObject *
-n_gramm::search(PyObject *pattern)
-{
-	char *c_str;
-	const int size = get_c_string(pattern, c_str);
-	CSTRList substrs;
-	CSTRList n_gramms;
-	select_substrs(n_gramms, substrs, c_str, size);
-
-	if (n_gramms.empty()) {
-		return Py_None;
-	}
-
-	std::sort(n_gramms.begin(), n_gramms.end(), [](const CSTR &lhs, const CSTR &rhs) {
-		return lhs.second < rhs.second;
-	});
-
-	IndexResultList intersection;
-	bool is_init_intersection = true;
-
-	for (auto &p : n_gramms) {
-		const char *c = p.first;
-		const unsigned int len = p.second;
-		auto range = indexes_[len].equal_range(hash_of_string(c, len));
-
-		if (!std::distance(range.first, range.second)) {
-			return Py_None;
-		}
-
-		if (is_init_intersection) {
-			intersection.insert(intersection.end(), range.first, range.second);
-			is_init_intersection = false;
-			continue;
-		}
-
-		std::set_intersection(intersection.begin(), intersection.end(),
-			range.first, range.first,
-			std::back_inserter(intersection),
-			[](const IndexResult &lhs, const IndexResult &rhs) {
-				return lhs.second.first == rhs.second.first;
-		});
-
-		if (intersection.empty()) {
-			return Py_None;
-		}
-	}
-
-	PyObject *result = PyList_New(intersection.size());
-	unsigned int i = 0;
-	for (auto &p : intersection) {
-		PyObject * tuple = PyTuple_New(2);
-		PyList_SetItem(result, i++, tuple);
-		PyTuple_SetItem(tuple, 0, p.second.first);
-		PyTuple_SetItem(tuple, 1, p.second.second);
-	}
-	
-	return result;
-}
-
 
 void
 n_gramm::create_n_gramms(CSTRList &n_gramms, char *c_str, const unsigned int size)
 {
 	const unsigned int len = std::min(size, n_count_);
 	unsigned int pos = 0;
-	do {
+	while (true) {
 		n_gramms.push_back(std::make_pair(&c_str[pos], len));
-	} while ((++pos) + len <= size);
+		const unsigned int end = pos + len;
+		if (end == size)
+			break;
+		pos = std::min(end, size - len);
+	}
 }
 
 void 
