@@ -1,0 +1,10 @@
+*.pyd
+extention.vcxproj
+*.cxx
+Release/*
+Debug/*
+extention.vcxproj.filters
+*.user
+indexer.py
+extention.h
+*.pyc
