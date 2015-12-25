@@ -33,6 +33,15 @@
    }
 }
 
+%exception n_gramm::del_line {
+   try {
+      $action
+   } catch (std::exception &e) {
+      PyErr_SetString(PyExc_BaseException, e.what());
+      return NULL;
+   }
+}
+
 %exception n_gramm::search {
    try {
       $action

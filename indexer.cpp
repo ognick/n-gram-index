@@ -7,6 +7,29 @@
 const int get_c_string(PyObject *str, char* &ref);
 const unsigned long hash_of_string(const char *c_str, const unsigned int len);
 
+void
+n_gramm::add_line(PyObject *index, PyObject *str)
+{
+	if (!PyString_Check(str)) {
+		throw std::exception("Expected a string");
+	}
+
+	storage_.insert({ index, str });
+	add_del_index(index, str, true);
+}
+
+void
+n_gramm::del_line(PyObject *index) 
+{
+	auto f = storage_.find(index);
+	if (f == storage_.end())
+		return;
+
+	add_del_index(index, f->second, false);
+
+}
+
+
 PyObject *
 n_gramm::search(PyObject *pattern)
 {
@@ -25,45 +48,34 @@ n_gramm::search(PyObject *pattern)
 		return lhs.second < rhs.second;
 	});
 
-	IndexResultSet intersection;
+	IndexValueSet intersection;
 	bool is_init_intersection = true;
 
 	for (auto &p : n_gramms) {
 		const char *c = p.first;
 		const unsigned int len = p.second;
-		auto range = indexes_[len - 1].equal_range(hash_of_string(c, len));
+		NIndex hash_map = indexes_[len - 1];
+		auto f = hash_map.find(hash_of_string(c, len));
 
-		if (!std::distance(range.first, range.second)) {
+		if (f == hash_map.end()) {
 			return result;
 		}
 
-		for (auto it = range.first; it != range.second; it++) {
-			auto s = it->second.second;
-			char *c_str;
-			get_c_string(s, c_str);
-		}
+		IndexValueSet &resultSet = f->second;
 
 		if (is_init_intersection) {
-			for (auto it = range.first; it != range.second; it++) {
-				const IndexResult &el = *it;
-				intersection.insert(el);
-			}
+			intersection.swap(resultSet);
 			is_init_intersection = false;
 			continue;
 		}
 
-		for (auto it = intersection.begin(); it != intersection.end(); it++) {
-			const IndexResult &el = *it;
-			bool is_there = false;
-			for (auto it = range.first; it != range.second; it++)
-				if (it->second == el.second) {
-					is_there = true;
-					break;
-				}
-			if (!is_there)
-				intersection.erase(el);
-		}
-
+		IndexValueSet set_intersection_result;
+		std::set_intersection(
+			intersection.begin(), intersection.end(),
+			resultSet.begin(), resultSet.end(),
+			std::inserter(set_intersection_result, set_intersection_result.begin())
+		);
+		set_intersection_result.swap(intersection);
 
 		if (intersection.empty()) {
 			return result;
@@ -72,14 +84,14 @@ n_gramm::search(PyObject *pattern)
 
 	unsigned int i = 0;
 	for (auto &p : intersection) {
-		PyObject *str = p.second.second;
+		PyObject *str = p.second;
 		char * c_str;
 		const unsigned int size = get_c_string(str, c_str);
 		if (!is_real_substrs(substrs, c_str, size))
 			continue;
 
 		PyObject * tuple = PyTuple_New(2);
-		PyTuple_SetItem(tuple, 0, p.second.first);
+		PyTuple_SetItem(tuple, 0, p.first);
 		PyTuple_SetItem(tuple, 1, str);
 		PyList_Insert(result, i++, tuple);
 	}
@@ -115,33 +127,30 @@ bool n_gramm::is_real_substrs(CSTRList &substrs, char * c_str, const unsigned in
 }
 
 void 
-n_gramm::add_line(PyObject *index, PyObject *str)
-{
-	if (!PyString_Check(str)) {
-		throw std::exception("Expected a string");
-	}
-
-	add_to_index(str, std::make_pair(index, str));
-}
-
-void 
-n_gramm::add_to_index(PyObject *str, IndexValue &value)
+n_gramm::add_del_index(PyObject *index, PyObject *str, bool is_add)
 {
 	using namespace std;
 	char *c_str;
+	IndexValue value = std::make_pair(index, str);
 	const unsigned int size = get_c_string(str, c_str);
 	for (unsigned int pos = 0; pos < size; pos++)
 		for (unsigned int len = 1; pos + len <= size && len <= n_count_; len++) {
-			HashLongPyObject &hash_map = indexes_[len - 1];
+			NIndex &hash_map = indexes_[len - 1];
 			IndexKey hash = hash_of_string(&c_str[pos], len);
-			auto range = hash_map.equal_range(hash);
-			bool is_duplicate = false;
-			for (auto it = range.first; it != range.second; ++it) {
-				if (it->second.first == value.first && it->second.second == value.second)
-					is_duplicate = true;
+			auto f = hash_map.find(hash);
+			if (f == hash_map.end()) {
+				if (!is_add)
+					continue;
+
+				IndexValueSet new_value_set = { value };
+				hash_map.insert({ hash, new_value_set });
+				continue;
 			}
-			if (!is_duplicate)
-				hash_map.insert(make_pair(hash, value));
+			IndexValueSet &old_value_set = f->second;
+			if (is_add)
+				old_value_set.insert(value);
+			else
+				old_value_set.erase(value);
 		}
 }
 
