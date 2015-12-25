@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <iterator>
 
+#include <time.h>
+
 const int get_c_string(PyObject *str, char* &ref);
 const unsigned long hash_of_string(const char *c_str, const unsigned int len);
 
@@ -13,6 +15,9 @@ n_gramm::add_line(PyObject *index, PyObject *str)
 	if (!PyString_Check(str)) {
 		throw std::exception("Expected a string");
 	}
+
+	if (storage_.find(index) != storage_.end())
+		return;
 
 	storage_.insert({ index, str });
 	add_del_index(index, str, true);
@@ -26,7 +31,7 @@ n_gramm::del_line(PyObject *index)
 		return;
 
 	add_del_index(index, f->second, false);
-
+	storage_.erase(f);
 }
 
 
@@ -35,6 +40,7 @@ n_gramm::search(PyObject *pattern)
 {
 	char *c_str;
 	const int size = get_c_string(pattern, c_str);
+
 	CSTRList substrs;
 	CSTRList n_gramms;
 	select_substrs(n_gramms, substrs, c_str, size);
@@ -48,21 +54,20 @@ n_gramm::search(PyObject *pattern)
 		return lhs.second < rhs.second;
 	});
 
+
 	IndexValueSet intersection;
 	bool is_init_intersection = true;
 
 	for (auto &p : n_gramms) {
 		const char *c = p.first;
 		const unsigned int len = p.second;
-		NIndex hash_map = indexes_[len - 1];
+		NIndex &hash_map = indexes_[len - 1];
 		auto f = hash_map.find(hash_of_string(c, len));
-
 		if (f == hash_map.end()) {
 			return result;
 		}
 
 		IndexValueSet &resultSet = f->second;
-
 		if (is_init_intersection) {
 			intersection.swap(resultSet);
 			is_init_intersection = false;
