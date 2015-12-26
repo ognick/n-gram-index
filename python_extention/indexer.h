@@ -4,7 +4,7 @@
 #include <set>
 #include <vector>
 
-#include "indexer_impl.h"
+#include <indexer_lib/indexer_impl.h>
 
 class n_gramm
 {

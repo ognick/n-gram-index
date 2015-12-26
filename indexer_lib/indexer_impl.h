@@ -9,7 +9,7 @@ public:
     StringBuf(const std::string& str);
     StringBuf(const StringBuf&) = default;
     bool operator< (const StringBuf& other) const {
-        return true;
+        return Ptr < other.Ptr;
     }
 public:
     const char* Ptr;
