@@ -3,17 +3,6 @@
 	#include "indexer.h"
 %}
 
-class n_gramm 
-{
-	public:
-		n_gramm(unsigned int n);
-		void add_line(PyObject *index, PyObject *str);
-		PyObject * search(PyObject *pattern);
-		void del_line(PyObject *index);
-		const int get_c_string(PyObject * str, char* &ref);
-};
-
-
 %exception n_gramm::add_line {
    try {
       $action

@@ -9,11 +9,23 @@
 
 namespace Impl {
 	template<class K, class V, class Consumer>
-	class n_gramm
+	struct n_gramm
 	{
-	public:
 		typedef std::pair<K *, V *> IndexValue;
 		typedef std::list<IndexValue> IndexValueList;
+		typedef unsigned long IndexKey;
+		typedef std::set<IndexValue> IndexValueSet;
+
+		typedef std::unordered_map<IndexKey, IndexValueSet> NIndex;
+		typedef std::vector<NIndex> Indexes;
+		typedef std::pair<char*, unsigned int> CSTR;
+		typedef std::vector<CSTR> CSTRList;
+		typedef std::unordered_map<K *, V *> Storage;
+
+		const unsigned int n_count_;
+		Indexes indexes_;
+		Storage storage_;
+		Consumer &consumer_;
 
 		n_gramm(unsigned int n, Consumer &consumer) : n_count_(n), indexes_(n), consumer_(consumer){}
 
@@ -99,22 +111,6 @@ namespace Impl {
 			return result;
 		}
 
-	private:
-		typedef unsigned long IndexKey;
-		struct IndexValueHash {
-			inline std::size_t operator()(const IndexValue &v) const {
-				K* index = v.first;
-				return reinterpret_cast<std::size_t>(index);
-			}
-		};
-		typedef std::set<IndexValue> IndexValueSet;
-
-		typedef std::unordered_map<IndexKey, IndexValueSet> NIndex;
-		typedef std::vector<NIndex> Indexes;
-		typedef std::pair<char*, unsigned int> CSTR;
-		typedef std::vector<CSTR> CSTRList;
-		typedef std::unordered_map<K *, V *> Storage;
-
 		void add_del_index(K *index, V *str, bool is_add)
 		{
 			using namespace std;
@@ -149,8 +145,12 @@ namespace Impl {
 					if (is_add)  {
 						old_value_set.insert(value);
 					}
-					else
+					else {
 						old_value_set.erase(value);
+						if (old_value_set.empty()) {
+							hash_map.erase(hash);
+						}
+					}
 				}
 		}
 
@@ -227,10 +227,5 @@ namespace Impl {
 				hash = ((hash << 5) + hash) + c_str[i];
 			return hash;
 		}
-
-		const unsigned int n_count_;
-		Indexes indexes_;
-		Storage storage_;
-		Consumer &consumer_;
 	};
 }

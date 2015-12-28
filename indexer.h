@@ -5,8 +5,7 @@
 class n_gramm 
 {
 	public:
-		n_gramm(unsigned int n) : pimpl_(n, *this) {};
-		~n_gramm(){};
+		n_gramm(unsigned int n) : pimpl_(n, *this) { };
 
 		void add_line(PyObject *index, PyObject *str);
 		PyObject * search(PyObject *pattern);
