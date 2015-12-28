@@ -5,7 +5,7 @@ void
 n_gramm::add_line(PyObject *index, PyObject *str)
 {
 	if (!PyString_Check(str)) {
-		throw std::exception("Expected a string");
+		throw std::string("Expected a string");
 	}
 
 	pimpl_.add_line(index, str);

@@ -8,3 +8,4 @@ extention.vcxproj.filters
 indexer.py
 extention.h
 *.pyc
+*build*/*
