@@ -4,6 +4,8 @@
 #include <memory>
 #include <algorithm>
 #include <iterator>
+#include <functional>
+
 
 namespace Impl {
 	template<class K, class V, class Consumer>
@@ -17,7 +19,8 @@ namespace Impl {
 
 		void add_line(K *index, V *str)
 		{
-			if (storage_.find(index) != storage_.end())
+			auto f = storage_.find(index);
+			if (f != storage_.end())
 				return;
 
 			storage_.insert({ index, str });
@@ -54,15 +57,17 @@ namespace Impl {
 			for (auto &p : n_gramms) {
 				const char *c = p.first;
 				const unsigned int len = p.second;
+
 				NIndex &hash_map = indexes_[len - 1];
-				auto f = hash_map.find(hash_of_string(c, len));
-				if (f == hash_map.end()) {
+				const auto hash = hash_of_string(c, len);
+				auto f = hash_map.find(hash);
+				if (f == hash_map.end()) 
 					return result;
-				}
 
 				IndexValueSet &resultSet = f->second;
+
 				if (is_init_intersection) {
-					intersection.swap(resultSet);
+					intersection = resultSet;
 					is_init_intersection = false;
 					continue;
 				}
@@ -80,6 +85,7 @@ namespace Impl {
 				}
 			}
 
+
 			for (auto &p : intersection) {
 				V *str = p.second;
 				char * c_str;
@@ -95,7 +101,14 @@ namespace Impl {
 
 	private:
 		typedef unsigned long IndexKey;
+		struct IndexValueHash {
+			inline std::size_t operator()(const IndexValue &v) const {
+				K* index = v.first;
+				return reinterpret_cast<std::size_t>(index);
+			}
+		};
 		typedef std::set<IndexValue> IndexValueSet;
+
 		typedef std::unordered_map<IndexKey, IndexValueSet> NIndex;
 		typedef std::vector<NIndex> Indexes;
 		typedef std::pair<char*, unsigned int> CSTR;
@@ -112,18 +125,30 @@ namespace Impl {
 				for (unsigned int len = 1; pos + len <= size && len <= n_count_; len++) {
 					NIndex &hash_map = indexes_[len - 1];
 					IndexKey hash = hash_of_string(&c_str[pos], len);
+					//if (len == 6) {
+					//	auto tmp = c_str[pos + len];
+					//	c_str[pos + len] = '\0';
+					//	cout << "add:" << &c_str[pos] << " len:" << len << "\n";
+					//	cout << "hash :" << hash << endl;
+					//	c_str[pos + len] = tmp;
+					//}
+
 					auto f = hash_map.find(hash);
 					if (f == hash_map.end()) {
 						if (!is_add)
 							continue;
 
-						IndexValueSet new_value_set = { value };
-						hash_map.insert({ hash, new_value_set });
+						IndexValueSet new_value_set;
+						new_value_set.insert(value);
+						hash_map.insert(std::make_pair(hash, new_value_set));
+
 						continue;
 					}
 					IndexValueSet &old_value_set = f->second;
-					if (is_add)
+
+					if (is_add)  {
 						old_value_set.insert(value);
+					}
 					else
 						old_value_set.erase(value);
 				}
@@ -174,25 +199,23 @@ namespace Impl {
 		bool is_real_substrs(CSTRList &substrs, char * c_str, const unsigned int size)
 		{
 			bool is_there = true;
-			if (substrs.size() > 1) {
-				is_there = true;
-				unsigned int offset = 0;
-				for (const auto &p : substrs) {
-					is_there = false;
-					char *c_sub = p.first;
-					unsigned int len = p.second;
-					while (offset + len <= size) {
-						if (std::equal(c_str + offset, c_str + offset + len, c_sub)) {
-							is_there = true;
-							offset += len;
-							break;
-						}
-						offset++;
-					}
-					if (!is_there)
+			unsigned int offset = 0;
+			for (const auto &p : substrs) {
+				is_there = false;
+				char *c_sub = p.first;
+				unsigned int len = p.second;
+				while (offset + len <= size) {
+					if (std::equal(c_str + offset, c_str + offset + len, c_sub)) {
+						is_there = true;
+						offset += len;
 						break;
+					}
+					offset++;
 				}
+				if (!is_there)
+					break;
 			}
+
 
 			return is_there;
 		}

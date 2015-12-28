@@ -1,4 +1,5 @@
 #include "indexer.h"
+#include <iostream>
 
 void 
 n_gramm::add_line(PyObject *index, PyObject *str)
@@ -15,7 +16,8 @@ n_gramm::search(PyObject *pattern)
 {
 	PyObject *result = PyList_New(0);
 	unsigned int i = 0;
-	for (auto &p : pimpl_.search(pattern)) {
+	const auto &r = pimpl_.search(pattern);
+	for (auto &p : r) {
 		PyObject *str = p.second;
 		PyObject *tuple = PyTuple_New(2);
 		PyTuple_SetItem(tuple, 0, p.first);
