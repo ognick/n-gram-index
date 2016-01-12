@@ -34,6 +34,12 @@ n_gramm::del_line(PyObject *index)
 }
 
 const int 
+n_gramm::size()
+{
+	return pimpl_.size();
+}
+
+const int 
 n_gramm::get_c_string(PyObject * str, char* &ref) {
 	ref = PyString_AsString(str);
 	return PyString_Size(str);

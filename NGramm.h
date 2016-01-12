@@ -29,6 +29,11 @@ namespace Impl {
 
 		n_gramm(unsigned int n, Consumer &consumer) : n_count_(n), indexes_(n), consumer_(consumer){}
 
+		const int size()
+		{
+			return storage_.size();
+		}
+
 		void add_line(K *index, V *str)
 		{
 			auto f = storage_.find(index);
@@ -60,6 +65,7 @@ namespace Impl {
 
 			IndexValueList result;
 			if (n_gramms.empty()) {
+				copy(storage_.begin(), storage_.end(), back_inserter(result));
 				return result;
 			}
 
@@ -96,7 +102,6 @@ namespace Impl {
 					return result;
 				}
 			}
-
 
 			for (auto &p : intersection) {
 				V *str = p.second;
@@ -140,6 +145,7 @@ namespace Impl {
 
 						continue;
 					}
+
 					IndexValueSet &old_value_set = f->second;
 
 					if (is_add)  {
