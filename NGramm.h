@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <iterator>
 #include <functional>
-
+#include <vector>
 
 namespace Impl {
 	template<class K, class V, class Consumer>
