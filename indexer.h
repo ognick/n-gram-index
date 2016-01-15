@@ -1,6 +1,7 @@
 #include <Python.h>
 #include <list>
 #include "NGramm.h"
+#include <string>
 
 class n_gramm 
 {
