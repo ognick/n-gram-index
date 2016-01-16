@@ -19,6 +19,7 @@ n_gramm::search(PyObject *pattern)
 	const auto &r = pimpl_.search(pattern);
 	for (auto &p : r) {
 		PyObject *str = p.second;
+        Py_INCREF(str);
 		PyObject *tuple = PyTuple_New(2);
 		PyTuple_SetItem(tuple, 0, p.first);
 		PyTuple_SetItem(tuple, 1, str);

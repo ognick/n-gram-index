@@ -25,6 +25,7 @@ def createBadWorld(pattern1, pattern2, pattern3):
 	pattern1 + generateWorld(randint(3,10)) + pattern1 + generateWorld(randint(3,10))
 
 def test(n):
+	storage = {}
 	index = n_gramm(n)
 	pattern1 = generateWorld(randint(3,10))
 	pattern2 = generateWorld(randint(3,10))
@@ -51,5 +52,6 @@ def test(n):
 	assert (index.size() == 0)
 
 if __name__ == "__main__":
-	for n in xrange(3,13):
-		test(n)
+	for _ in xrange(1000):
+		for n in xrange(3,13):
+			test(n)
