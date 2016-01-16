@@ -15,15 +15,10 @@ PyObject *
 n_gramm::search(PyObject *pattern)
 {
 	PyObject *result = PyList_New(0);
-	unsigned int i = 0;
 	const auto &r = pimpl_.search(pattern);
 	for (auto &p : r) {
-		PyObject *str = p.second;
-        Py_INCREF(str);
-		PyObject *tuple = PyTuple_New(2);
-		PyTuple_SetItem(tuple, 0, p.first);
-		PyTuple_SetItem(tuple, 1, str);
-		PyList_Insert(result, i++, tuple);
+        PyObject *index = p.first;
+		PyList_Append(result, index);
 	}
 	return result;
 }
