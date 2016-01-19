@@ -9,3 +9,6 @@ indexer.py
 extention.h
 *.pyc
 *build*/*
+.DS_Store
+*.idea*	
+indexer.xcodeproj

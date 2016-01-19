@@ -3,7 +3,7 @@ from random import randint
 import sys
 if len(sys.argv) > 1:
 	sys.path.append(sys.argv[1])
-from indexer import n_gramm
+from indexer import NGramm
 
 alphabet1 = [chr(i) for i in xrange(65, 123)]
 alphabet2 = [chr(i) for i in xrange(123, 188)]
@@ -25,7 +25,7 @@ def createBadWorld(pattern3):
 
 def test(n):
 	storage = {}
-	index = n_gramm(n)
+	index = NGramm(n)
 	pattern1 = generateWorld(alphabet1, RAND()) + '1'
 	pattern2 = generateWorld(alphabet1, RAND()) + '2'
 	pattern3 = generateWorld(alphabet2, RAND()) + '3'
@@ -36,7 +36,7 @@ def test(n):
 		idx = n*1000 + i
 		storage[idx] = s = createGoodWorld(pattern1, pattern2) \
 			if i < GOD_WORLD_COUNT else createBadWorld(pattern3)
-		index.add_line(idx,s)
+		index.addLine(idx,s)
 	assert (index.size() == GOD_WORLD_COUNT + BAD_WORLD_COUNT)
 	for _ in xrange(1):
 		assert (len(index.search('*')) == GOD_WORLD_COUNT + BAD_WORLD_COUNT)
@@ -46,7 +46,7 @@ def test(n):
 		assert (len(index.search(patternWrong)) == 0)
 
 	for idx in storage.iterkeys():
-		index.del_line(idx)
+		index.delLine(idx)
 	assert (index.size() == 0)
 
 if __name__ == "__main__":

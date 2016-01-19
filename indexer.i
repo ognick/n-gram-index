@@ -3,7 +3,7 @@
 	#include "indexer.h"
 %}
 
-%exception n_gramm::add_line {
+%exception NGramm::addLine {
    try {
       $action
    } catch (std::string &e) {
@@ -12,7 +12,7 @@
    }
 }
 
-%exception n_gramm::del_line {
+%exception NGramm::delLine {
    try {
       $action
    } catch (std::string &e) {
@@ -21,7 +21,7 @@
    }
 }
 
-%exception n_gramm::search {
+%exception NGramm::search {
    try {
       $action
    } catch (std::exception &e) {

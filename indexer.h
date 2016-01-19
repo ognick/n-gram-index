@@ -3,16 +3,17 @@
 #include "NGramm.h"
 #include <string>
 
-class n_gramm 
+class NGramm
 {
 	public:
-		n_gramm(unsigned int n) : pimpl_(n, *this) { };
+		NGramm(unsigned int n) : pimpl_(n, *this) { };
 
 		const int size();
-		void add_line(PyObject *index, PyObject *str);
+		void addLine(PyObject *index, PyObject *str);
 		PyObject * search(PyObject *pattern);
-		void del_line(PyObject *index);
-		const int get_c_string(PyObject * str, char* &ref);
+		void delLine(PyObject *index);
+    
+        const int get_c_string(PyObject * str, char* &ref) const;
 	private:
-		Impl::n_gramm<PyObject, PyObject, n_gramm>  pimpl_;
+		Impl::n_gramm<PyObject, PyObject, NGramm>  pimpl_;
 };
