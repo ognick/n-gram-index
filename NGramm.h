@@ -28,6 +28,13 @@ namespace Impl {
 		Consumer &consumer_;
 
 		n_gramm(unsigned int n, Consumer &consumer) : n_count_(n), indexes_(n), consumer_(consumer){}
+        ~n_gramm()
+        {
+            for (auto p: storage_) {
+                Py_XDECREF(p.first);
+                Py_XDECREF(p.second);
+            }
+        }
 
 		const int size()
 		{
@@ -40,6 +47,9 @@ namespace Impl {
 			if (f != storage_.end())
 				return;
 
+            Py_INCREF(index);
+            Py_INCREF(str);
+            
 			storage_.insert({ index, str });
 			add_del_index(index, str, true);
 		}
@@ -50,8 +60,12 @@ namespace Impl {
 			if (f == storage_.end())
 				return;
 
-			add_del_index(index, f->second, false);
-			storage_.erase(f);
+            V *str = f->second;
+			add_del_index(index, str, false);
+            storage_.erase(f);
+            
+            Py_XDECREF(index);
+            Py_XDECREF(str);
 		}
 
 		IndexValueList search(V *pattern)

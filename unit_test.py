@@ -5,8 +5,6 @@ if len(sys.argv) > 1:
 	sys.path.append(sys.argv[1])
 from indexer import n_gramm
 
-storage = {}
-
 alphabet1 = [chr(i) for i in xrange(65, 123)]
 alphabet2 = [chr(i) for i in xrange(123, 188)]
 
