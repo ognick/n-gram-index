@@ -31,8 +31,7 @@ namespace Impl {
         ~n_gramm()
         {
             for (auto p: storage_) {
-                Py_XDECREF(p.first);
-                Py_XDECREF(p.second);
+                consumer_.decr_refs(p.first, p.second);
             }
         }
 
@@ -47,8 +46,7 @@ namespace Impl {
 			if (f != storage_.end())
 				return;
 
-            Py_INCREF(index);
-            Py_INCREF(str);
+            consumer_.incr_refs(index, str);
             
 			storage_.insert({ index, str });
 			add_del_index(index, str, true);
@@ -64,8 +62,7 @@ namespace Impl {
 			add_del_index(index, str, false);
             storage_.erase(f);
             
-            Py_XDECREF(index);
-            Py_XDECREF(str);
+            consumer_.decr_refs(index, str);
 		}
 
 		IndexValueList search(V *pattern)

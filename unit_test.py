@@ -26,6 +26,11 @@ def createBadWorld(pattern3):
 def test(n):
 	storage = {}
 	index = NGramm(n)
+    
+	index.addLine(100000000, 'a')
+	index.delLine(100000000)
+	assert(index.size() == 0)
+    
 	pattern1 = generateWorld(alphabet1, RAND()) + '1'
 	pattern2 = generateWorld(alphabet1, RAND()) + '2'
 	pattern3 = generateWorld(alphabet2, RAND()) + '3'

@@ -1,6 +1,7 @@
 #include "indexer.h"
 #include <iostream>
 
+
 void 
 NGramm::addLine(PyObject *index, PyObject *str)
 {
@@ -39,4 +40,16 @@ const int
 NGramm::get_c_string(PyObject * str, char* &ref) const {
 	ref = PyString_AsString(str);
 	return PyString_Size(str);
+};
+
+void
+NGramm::incr_refs(PyObject *index, PyObject *str) {
+    Py_INCREF(index);
+    Py_INCREF(str);
+};
+
+void
+NGramm::decr_refs(PyObject *index, PyObject *str) {
+    Py_XDECREF(index);
+    Py_XDECREF(str);
 };
