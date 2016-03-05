@@ -18,7 +18,8 @@ def generateWorld(alphabet, length):
 	return ''.join(alphabet[randint(0, len(alphabet)-1)] for _ in xrange(length))
 
 def createGoodWorld(pattern1, pattern2):
-	return generateWorld(alphabet1, RAND()) + pattern1 + generateWorld(alphabet1, RAND()) + pattern2 + generateWorld(alphabet1, RAND())
+	return generateWorld(alphabet1, RAND()) + pattern1 + generateWorld(alphabet1, RAND()) + \
+		pattern2 + generateWorld(alphabet1, RAND())
 
 def createBadWorld(pattern3):
 	return generateWorld(alphabet2, RAND()) + pattern3 + generateWorld(alphabet2, RAND())
@@ -26,16 +27,26 @@ def createBadWorld(pattern3):
 def test(n):
 	storage = {}
 	index = NGramm(n)
-    
-	index.addLine(100000000, 'a')
-	index.delLine(100000000)
-	assert(index.size() == 0)
-    
+
 	pattern1 = generateWorld(alphabet1, RAND()) + '1'
 	pattern2 = generateWorld(alphabet1, RAND()) + '2'
 	pattern3 = generateWorld(alphabet2, RAND()) + '3'
 	patternRight = '%s*%s' % (pattern1, pattern2)
 	patternWrong = '%s*%s' % (pattern2, pattern1)
+
+	index.addLine(1, patternRight)
+	assert index.hasValue(patternRight)
+	index.addLine(2, patternRight)
+	assert index.hasValue(patternRight)
+	assert len(index.search(patternRight)) == 2
+	index.delLine(2)
+	assert len(index.search(patternRight)) == 1
+	index.delLine(1)
+	assert len(index.search(patternRight)) == 0
+	index.addLine(100000000, patternRight)
+	index.delLine(100000000)
+	assert(index.size() == 0)
+	assert not index.hasValue(patternRight)
 
 	for i in xrange(GOD_WORLD_COUNT + BAD_WORLD_COUNT):
 		idx = n*1000 + i

@@ -36,6 +36,12 @@ NGramm::size()
 	return pimpl_.size();
 }
 
+const bool
+NGramm::hasValue(PyObject *str)
+{
+    return pimpl_.has_value(str);
+}
+
 const int
 NGramm::get_c_string(PyObject * str, char* &ref) const {
 	ref = PyString_AsString(str);

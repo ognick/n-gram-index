@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <utility>
 #include <set>
+#include <unordered_set>
 #include <memory>
 #include <algorithm>
 #include <iterator>
@@ -8,47 +9,88 @@
 #include <vector>
 
 namespace Impl {
+	typedef unsigned long IndexKey;
+	typedef std::pair<char*, unsigned int> CSTR;
+
+	inline const IndexKey hash_of_string(const char *c_str, const unsigned int len)
+	{
+		unsigned long hash = 5381;
+		for (unsigned int i = 0; i < len; i++)
+			hash = ((hash << 5) + hash) + c_str[i];
+		return hash;
+	}
+	
+	struct CSTRHasher
+	{
+		inline const IndexKey operator()(const CSTR & p) const
+		{
+			return hash_of_string(p.first, p.second);
+		}
+	};
+
 	template<class K, class V, class Consumer>
 	struct n_gramm
 	{
 		typedef std::pair<K *, V *> IndexValue;
 		typedef std::list<IndexValue> IndexValueList;
-		typedef unsigned long IndexKey;
 		typedef std::set<IndexValue> IndexValueSet;
 
 		typedef std::unordered_map<IndexKey, IndexValueSet> NIndex;
 		typedef std::vector<NIndex> Indexes;
-		typedef std::pair<char*, unsigned int> CSTR;
+
 		typedef std::vector<CSTR> CSTRList;
 		typedef std::unordered_map<K *, V *> Storage;
+
+		typedef std::unordered_multiset<CSTR, CSTRHasher> CSTRSet;
 
 		const unsigned int n_count_;
 		Indexes indexes_;
 		Storage storage_;
+		CSTRSet values_;
 		Consumer &consumer_;
 
 		n_gramm(unsigned int n, Consumer &consumer) : n_count_(n), indexes_(n), consumer_(consumer){}
-        ~n_gramm()
-        {
-            for (auto p: storage_) {
-                consumer_.decr_refs(p.first, p.second);
-            }
-        }
+		~n_gramm()
+		{
+			for (auto p: storage_) {
+				consumer_.decr_refs(p.first, p.second);
+			}
+		}
 
 		const int size()
 		{
 			return storage_.size();
 		}
 
+		
+		const bool has_value(V *str)
+		{
+			char *c_str;
+			const int size = consumer_.get_c_string(str, c_str);
+			auto range = values_.equal_range({c_str, size});
+			for (auto &f = range.first; f != range.second; f++ ) {
+				char *cur_c_str = f->first;
+				const int cur_size = f->second;
+				if (size == cur_size && std::equal(c_str, c_str + size, cur_c_str))
+					return true;
+			}
+			
+			return false;
+		}
+		
 		void add_line(K *index, V *str)
 		{
 			auto f = storage_.find(index);
 			if (f != storage_.end())
 				return;
 
-            consumer_.incr_refs(index, str);
-            
-			storage_.insert({ index, str });
+			consumer_.incr_refs(index, str);
+			
+			char *c_str;
+			const int size = consumer_.get_c_string(str, c_str);
+			values_.insert({c_str, size});
+			
+			storage_.insert({index, str});
 			add_del_index(index, str, true);
 		}
 
@@ -58,11 +100,17 @@ namespace Impl {
 			if (f == storage_.end())
 				return;
 
-            V *str = f->second;
+			V *str = f->second;
+			
+			char *c_str;
+			const int size = consumer_.get_c_string(str, c_str);
+			values_.erase({c_str, size});
+			
+			
 			add_del_index(index, str, false);
-            storage_.erase(f);
-            
-            consumer_.decr_refs(index, str);
+			storage_.erase(f);
+			
+			consumer_.decr_refs(index, str);
 		}
 
 		IndexValueList search(V *pattern)
@@ -233,16 +281,8 @@ namespace Impl {
 					break;
 			}
 
-
 			return is_there;
 		}
-
-		inline const IndexKey hash_of_string(const char *c_str, const unsigned int len)
-		{
-			unsigned long hash = 5381;
-			for (unsigned int i = 0; i < len; i++)
-				hash = ((hash << 5) + hash) + c_str[i];
-			return hash;
-		}
+		
 	};
 }

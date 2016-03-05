@@ -9,6 +9,7 @@ class NGramm
 		NGramm(unsigned int n) : pimpl_(n, *this) { };
 
 		const int size();
+        const bool hasValue(PyObject *str);
 		void addLine(PyObject *index, PyObject *str);
 		PyObject * search(PyObject *pattern);
 		void delLine(PyObject *index);
