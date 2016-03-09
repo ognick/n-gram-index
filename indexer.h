@@ -16,8 +16,8 @@ class NGramm
     
     
         const int get_c_string(PyObject * str, char* &ref) const;
-        void incr_refs(PyObject *str, PyObject *index);
-        void decr_refs(PyObject *index, PyObject *str);
+        void incr_refs(PyObject *str);
+        void decr_refs(PyObject *str);
 	private:
-		Impl::n_gramm<PyObject, PyObject, NGramm>  pimpl_;
+		Impl::n_gramm<PyObject, NGramm>  pimpl_;
 };

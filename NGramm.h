@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace Impl {
-	typedef unsigned long IndexKey;
+	typedef long IndexKey;
 	typedef std::pair<char*, unsigned int> CSTR;
 
 	inline const IndexKey hash_of_string(const char *c_str, const unsigned int len)
@@ -28,10 +28,10 @@ namespace Impl {
 		}
 	};
 
-	template<class K, class V, class Consumer>
+	template<class V, class Consumer>
 	struct n_gramm
 	{
-		typedef std::pair<K *, V *> IndexValue;
+		typedef std::pair<IndexKey, V *> IndexValue;
 		typedef std::list<IndexValue> IndexValueList;
 		typedef std::set<IndexValue> IndexValueSet;
 
@@ -39,7 +39,7 @@ namespace Impl {
 		typedef std::vector<NIndex> Indexes;
 
 		typedef std::vector<CSTR> CSTRList;
-		typedef std::unordered_map<K *, V *> Storage;
+		typedef std::unordered_map<IndexKey, V *> Storage;
 
 		typedef std::unordered_multiset<CSTR, CSTRHasher> CSTRSet;
 
@@ -53,7 +53,8 @@ namespace Impl {
 		~n_gramm()
 		{
 			for (auto p: storage_) {
-				consumer_.decr_refs(p.first, p.second);
+			    V *str = p.second;
+				consumer_.decr_refs(str);
 			}
 		}
 
@@ -67,24 +68,19 @@ namespace Impl {
 		{
 			char *c_str;
 			const int size = consumer_.get_c_string(str, c_str);
-			auto range = values_.equal_range({c_str, size});
-			for (auto &f = range.first; f != range.second; f++ ) {
-				char *cur_c_str = f->first;
-				const int cur_size = f->second;
-				if (size == cur_size && std::equal(c_str, c_str + size, cur_c_str))
-					return true;
-			}
-			
-			return false;
+			if (values_.find({c_str, size}) != values_.end())
+				return true;
+			else
+				return false;
 		}
 		
-		void add_line(K *index, V *str)
+		void add_line(IndexKey index, V *str)
 		{
 			auto f = storage_.find(index);
 			if (f != storage_.end())
 				return;
 
-			consumer_.incr_refs(index, str);
+			consumer_.incr_refs(str);
 			
 			char *c_str;
 			const int size = consumer_.get_c_string(str, c_str);
@@ -94,7 +90,7 @@ namespace Impl {
 			add_del_index(index, str, true);
 		}
 
-		void del_line(K *index)
+		void del_line(IndexKey index)
 		{
 			auto f = storage_.find(index);
 			if (f == storage_.end())
@@ -104,13 +100,13 @@ namespace Impl {
 			
 			char *c_str;
 			const int size = consumer_.get_c_string(str, c_str);
-			values_.erase({c_str, size});
+			values_.erase(values_.find({c_str, size}));
 			
 			
 			add_del_index(index, str, false);
 			storage_.erase(f);
 			
-			consumer_.decr_refs(index, str);
+			consumer_.decr_refs(str);
 		}
 
 		IndexValueList search(V *pattern)
@@ -175,7 +171,7 @@ namespace Impl {
 			return result;
 		}
 
-		void add_del_index(K *index, V *str, bool is_add)
+		void add_del_index(IndexKey index, V *str, bool is_add)
 		{
 			using namespace std;
 			char *c_str;
