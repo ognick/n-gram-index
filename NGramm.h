@@ -1,7 +1,6 @@
 #include <unordered_map>
 #include <utility>
 #include <set>
-#include <unordered_set>
 #include <memory>
 #include <algorithm>
 #include <iterator>
@@ -9,24 +8,17 @@
 #include <vector>
 
 namespace Impl {
-	typedef long IndexKey;
-	typedef std::pair<char*, unsigned int> CSTR;
+	typedef unsigned long IndexKey;
+	typedef unsigned long HashKey;
+	typedef std::pair<char*, unsigned int> CStrLen;
 
-	inline const IndexKey hash_of_string(const char *c_str, const unsigned int len)
+	inline const HashKey hash_of_string(const char *c_str, const unsigned int len)
 	{
 		unsigned long hash = 5381;
 		for (unsigned int i = 0; i < len; i++)
 			hash = ((hash << 5) + hash) + c_str[i];
 		return hash;
 	}
-	
-	struct CSTRHasher
-	{
-		inline const IndexKey operator()(const CSTR & p) const
-		{
-			return hash_of_string(p.first, p.second);
-		}
-	};
 
 	template<class V, class Consumer>
 	struct n_gramm
@@ -35,25 +27,22 @@ namespace Impl {
 		typedef std::list<IndexValue> IndexValueList;
 		typedef std::set<IndexValue> IndexValueSet;
 
-		typedef std::unordered_map<IndexKey, IndexValueSet> NIndex;
+		typedef std::unordered_map<HashKey, IndexValueSet> NIndex;
 		typedef std::vector<NIndex> Indexes;
 
-		typedef std::vector<CSTR> CSTRList;
+		typedef std::vector<CStrLen> CStrLenList;
 		typedef std::unordered_map<IndexKey, V *> Storage;
-
-		typedef std::unordered_multiset<CSTR, CSTRHasher> CSTRSet;
 
 		const unsigned int n_count_;
 		Indexes indexes_;
 		Storage storage_;
-		CSTRSet values_;
 		Consumer &consumer_;
 
 		n_gramm(unsigned int n, Consumer &consumer) : n_count_(n), indexes_(n), consumer_(consumer){}
 		~n_gramm()
 		{
 			for (auto p: storage_) {
-			    V *str = p.second;
+				V *str = p.second;
 				consumer_.decr_refs(str);
 			}
 		}
@@ -63,17 +52,6 @@ namespace Impl {
 			return storage_.size();
 		}
 
-		
-		const bool has_value(V *str)
-		{
-			char *c_str;
-			const int size = consumer_.get_c_string(str, c_str);
-			if (values_.find({c_str, size}) != values_.end())
-				return true;
-			else
-				return false;
-		}
-		
 		void add_line(IndexKey index, V *str)
 		{
 			auto f = storage_.find(index);
@@ -81,11 +59,7 @@ namespace Impl {
 				return;
 
 			consumer_.incr_refs(str);
-			
-			char *c_str;
-			const int size = consumer_.get_c_string(str, c_str);
-			values_.insert({c_str, size});
-			
+
 			storage_.insert({index, str});
 			add_del_index(index, str, true);
 		}
@@ -97,16 +71,31 @@ namespace Impl {
 				return;
 
 			V *str = f->second;
-			
-			char *c_str;
-			const int size = consumer_.get_c_string(str, c_str);
-			values_.erase(values_.find({c_str, size}));
-			
-			
+
 			add_del_index(index, str, false);
 			storage_.erase(f);
 			
 			consumer_.decr_refs(str);
+		}
+
+
+		IndexValueList strict_search(V *str)
+		{
+			IndexValueList result;
+			char * c_str;
+			const unsigned int size = consumer_.get_c_string(str, c_str);
+			for (auto &r : search(str)) {
+				V *cur_str = r.second;
+				char * cur_c_str;
+				const unsigned int cur_size = consumer_.get_c_string(cur_str, cur_c_str);
+				if (size != cur_size)
+					continue;
+
+				if (std::equal(c_str, c_str + size, cur_c_str))
+					result.push_back(r);
+			}
+
+			return result;
 		}
 
 		IndexValueList search(V *pattern)
@@ -114,8 +103,8 @@ namespace Impl {
 			char *c_str;
 			const int size = consumer_.get_c_string(pattern, c_str);
 
-			CSTRList substrs;
-			CSTRList n_gramms;
+			CStrLenList substrs;
+			CStrLenList n_gramms;
 			select_substrs(n_gramms, substrs, c_str, size);
 
 			IndexValueList result;
@@ -180,7 +169,7 @@ namespace Impl {
 			for (unsigned int pos = 0; pos < size; pos++)
 				for (unsigned int len = 1; pos + len <= size && len <= n_count_; len++) {
 					NIndex &hash_map = indexes_[len - 1];
-					IndexKey hash = hash_of_string(&c_str[pos], len);
+					HashKey hash = hash_of_string(&c_str[pos], len);
 					//if (len == 6) {
 					//	auto tmp = c_str[pos + len];
 					//	c_str[pos + len] = '\0';
@@ -203,7 +192,7 @@ namespace Impl {
 
 					IndexValueSet &old_value_set = f->second;
 
-					if (is_add)  {
+					if (is_add) {
 						old_value_set.insert(value);
 					}
 					else {
@@ -215,7 +204,7 @@ namespace Impl {
 				}
 		}
 
-		void select_substrs(CSTRList &n_gramms, CSTRList &substr, char *c_str, const unsigned int size)
+		void select_substrs(CStrLenList &n_gramms, CStrLenList &substr, char *c_str, const unsigned int size)
 		{
 			bool prev_is_start = true;
 			char *cur_c = nullptr;
@@ -244,7 +233,7 @@ namespace Impl {
 			}
 		}
 
-		void create_n_gramms(CSTRList &n_gramms, char *c_str, const unsigned int size)
+		void create_n_gramms(CStrLenList &n_gramms, char *c_str, const unsigned int size)
 		{
 			const unsigned int len = std::min(size, n_count_);
 			unsigned int pos = 0;
@@ -257,7 +246,7 @@ namespace Impl {
 			}
 		}
 
-		bool is_real_substrs(CSTRList &substrs, char * c_str, const unsigned int size)
+		bool is_real_substrs(CStrLenList &substrs, char * c_str, const unsigned int size)
 		{
 			bool is_there = true;
 			unsigned int offset = 0;

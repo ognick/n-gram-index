@@ -9,7 +9,7 @@ NGramm::addLine(PyObject *index, PyObject *str)
 		throw std::string("Wrong type");
 	}
 
-	pimpl_.add_line(PyInt_AsLong(index), str);
+	pimpl_.add_line(PyInt_AsUnsignedLongMask(index), str);
 }
 
 PyObject * 
@@ -19,10 +19,28 @@ NGramm::search(PyObject *pattern)
 		throw std::string("Wrong type");
 	}
 
+	const Pimpl::IndexValueList &result = pimpl_.search(pattern);
+	return convert_search_result(result);
+}
+
+
+PyObject *
+NGramm::strictSearch(PyObject *str)
+{
+	if (!PyString_Check(str)) {
+		throw std::string("Wrong type");
+	}
+
+	const Pimpl::IndexValueList &result = pimpl_.strict_search(str);
+	return convert_search_result(result);
+}
+
+PyObject *
+NGramm::convert_search_result(const Pimpl::IndexValueList &c_result)
+{
 	PyObject *result = PyList_New(0);
-	const auto &r = pimpl_.search(pattern);
-	for (auto &p : r) {
-        PyObject *index = PyInt_FromLong(p.first);
+	for (auto &p : c_result) {
+		PyObject *index = PyInt_FromLong(p.first);
 		PyList_Append(result, index);
 	}
 	return result;
@@ -35,23 +53,13 @@ NGramm::delLine(PyObject *index)
 		throw std::string("Wrong type");
 	}
 
-	return pimpl_.del_line(PyInt_AsLong(index));
+	return pimpl_.del_line(PyInt_AsUnsignedLongMask(index));
 }
 
 const int 
 NGramm::size()
 {
 	return pimpl_.size();
-}
-
-const bool
-NGramm::hasValue(PyObject *str)
-{
-    if (!PyString_Check(str)) {
-		throw std::string("Wrong type");
-	}
-
-    return pimpl_.has_value(str);
 }
 
 const int
@@ -62,10 +70,10 @@ NGramm::get_c_string(PyObject * str, char* &ref) const {
 
 void
 NGramm::incr_refs(PyObject *str) {
-    Py_INCREF(str);
+	Py_INCREF(str);
 };
 
 void
 NGramm::decr_refs(PyObject *str) {
-    Py_XDECREF(str);
+	Py_XDECREF(str);
 };

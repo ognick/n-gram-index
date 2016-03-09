@@ -28,6 +28,11 @@ def test(n):
 	storage = {}
 	index = NGramm(n)
 
+	index.addLine(2574, 'Rrrrrrr'.lower())
+	assert index.strictSearch('Rrrrrrr'.lower())
+	index.delLine(2574)
+
+
 	pattern1 = generateWorld(alphabet1, RAND()) + '1'
 	pattern2 = generateWorld(alphabet1, RAND()) + '2'
 	pattern3 = generateWorld(alphabet2, RAND()) + '3'
@@ -35,18 +40,25 @@ def test(n):
 	patternWrong = '%s*%s' % (pattern2, pattern1)
 
 	index.addLine(1, patternRight)
-	assert index.hasValue(patternRight)
+	assert index.strictSearch(patternRight)
 	index.addLine(2, patternRight)
-	assert index.hasValue(patternRight)
+	assert index.strictSearch(patternRight)
 	assert len(index.search(patternRight)) == 2
+
 	index.delLine(2)
 	assert len(index.search(patternRight)) == 1
 	index.delLine(1)
 	assert len(index.search(patternRight)) == 0
 	index.addLine(100000000, patternRight)
+	index.addLine(100000001, patternRight)
+	index.addLine(100000002, patternRight)
+	assert index.strictSearch(patternRight)
+	index.delLine(100000002)
+	assert index.strictSearch(patternRight)
+	index.delLine(100000001)
 	index.delLine(100000000)
 	assert(index.size() == 0)
-	assert not index.hasValue(patternRight)
+	assert not index.strictSearch(patternRight)
 
 	for i in xrange(GOD_WORLD_COUNT + BAD_WORLD_COUNT):
 		idx = n*1000 + i
