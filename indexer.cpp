@@ -12,41 +12,29 @@ NGramm::addLine(PyObject *index, PyObject *str)
 	pimpl_.add_line(PyInt_AsUnsignedLongMask(index), str);
 }
 
-PyObject * 
+
+PyObject *
 NGramm::search(PyObject *pattern)
+{
+	return search(pattern, false);
+}
+
+PyObject * 
+NGramm::search(PyObject *pattern, const bool isStrict)
 {
 	if (!PyString_Check(pattern)) {
 		throw std::string("Wrong type");
 	}
 
-	const Pimpl::IndexValueList &result = pimpl_.search(pattern);
-	return convert_search_result(result);
-}
-
-
-PyObject *
-NGramm::strictSearch(PyObject *str)
-{
-	if (!PyString_Check(str)) {
-		throw std::string("Wrong type");
-	}
-
-	const Pimpl::IndexValueList &result = pimpl_.strict_search(str);
-	return convert_search_result(result);
-}
-
-PyObject *
-NGramm::convert_search_result(const Pimpl::IndexValueList &c_result)
-{
 	PyObject *result = PyList_New(0);
-	for (auto &p : c_result) {
+	for (auto &p : pimpl_.search(pattern, isStrict)) {
 		PyObject *index = PyInt_FromLong(p.first);
 		PyList_Append(result, index);
 	}
 	return result;
 }
 
-void 
+void
 NGramm::delLine(PyObject *index)
 {
 	if (!PyInt_Check(index)) {

@@ -10,8 +10,8 @@ class NGramm
 
 		const int size();
 		void addLine(PyObject *index, PyObject *str);
-		PyObject * strictSearch(PyObject *str);
 		PyObject * search(PyObject *pattern);
+		PyObject * search(PyObject *pattern, const bool isStrict);
 		void delLine(PyObject *index);
 
 		const int get_c_string(PyObject * str, char* &ref) const;
@@ -19,6 +19,5 @@ class NGramm
 		void decr_refs(PyObject *str);
 	private:
 		typedef Impl::n_gramm<PyObject, NGramm> Pimpl;
-		PyObject * convert_search_result(const Pimpl::IndexValueList &);
 		Pimpl pimpl_;
 };

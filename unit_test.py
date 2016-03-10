@@ -29,9 +29,10 @@ def test(n):
 	index = NGramm(n)
 
 	index.addLine(2574, 'Rrrrrrr'.lower())
-	assert index.strictSearch('Rrrrrrr'.lower())
+	assert index.search('Rrrrrrr'.lower(), True)
+	assert not index.search('Rrrrrr'.lower(), True)
+	assert not index.search('Rrrrrrrr'.lower(), True)
 	index.delLine(2574)
-
 
 	pattern1 = generateWorld(alphabet1, RAND()) + '1'
 	pattern2 = generateWorld(alphabet1, RAND()) + '2'
@@ -40,9 +41,9 @@ def test(n):
 	patternWrong = '%s*%s' % (pattern2, pattern1)
 
 	index.addLine(1, patternRight)
-	assert index.strictSearch(patternRight)
+	assert index.search(patternRight, True)
 	index.addLine(2, patternRight)
-	assert index.strictSearch(patternRight)
+	assert index.search(patternRight, True)
 	assert len(index.search(patternRight)) == 2
 
 	index.delLine(2)
@@ -52,13 +53,13 @@ def test(n):
 	index.addLine(100000000, patternRight)
 	index.addLine(100000001, patternRight)
 	index.addLine(100000002, patternRight)
-	assert index.strictSearch(patternRight)
+	assert index.search(patternRight, True)
 	index.delLine(100000002)
-	assert index.strictSearch(patternRight)
+	assert index.search(patternRight, True)
 	index.delLine(100000001)
 	index.delLine(100000000)
 	assert(index.size() == 0)
-	assert not index.strictSearch(patternRight)
+	assert not index.search(patternRight, True)
 
 	for i in xrange(GOD_WORLD_COUNT + BAD_WORLD_COUNT):
 		idx = n*1000 + i

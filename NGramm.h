@@ -78,34 +78,14 @@ namespace Impl {
 			consumer_.decr_refs(str);
 		}
 
-
-		IndexValueList strict_search(V *str)
-		{
-			IndexValueList result;
-			char * c_str;
-			const unsigned int size = consumer_.get_c_string(str, c_str);
-			for (auto &r : search(str)) {
-				V *cur_str = r.second;
-				char * cur_c_str;
-				const unsigned int cur_size = consumer_.get_c_string(cur_str, cur_c_str);
-				if (size != cur_size)
-					continue;
-
-				if (std::equal(c_str, c_str + size, cur_c_str))
-					result.push_back(r);
-			}
-
-			return result;
-		}
-
-		IndexValueList search(V *pattern)
+		IndexValueList search(V *pattern, const bool is_strict)
 		{
 			char *c_str;
 			const int size = consumer_.get_c_string(pattern, c_str);
 
 			CStrLenList substrs;
 			CStrLenList n_gramms;
-			select_substrs(n_gramms, substrs, c_str, size);
+			select_substrs(n_gramms, substrs, c_str, size, is_strict);
 
 			IndexValueList result;
 			if (n_gramms.empty()) {
@@ -151,7 +131,7 @@ namespace Impl {
 				V *str = p.second;
 				char * c_str;
 				const unsigned int size = consumer_.get_c_string(str, c_str);
-				if (!is_real_substrs(substrs, c_str, size))
+				if (!is_real_substrs(substrs, c_str, size, is_strict))
 					continue;
 
 				result.push_back({ p.first, str });
@@ -204,11 +184,18 @@ namespace Impl {
 				}
 		}
 
-		void select_substrs(CStrLenList &n_gramms, CStrLenList &substr, char *c_str, const unsigned int size)
+		void select_substrs(CStrLenList &n_gramms, CStrLenList &substr, char *c_str,
+							const unsigned int size, const bool is_strict)
 		{
 			bool prev_is_start = true;
 			char *cur_c = nullptr;
 			int len = 0;
+			if (is_strict) {
+				substr.push_back({ c_str, size });
+				create_n_gramms(n_gramms, c_str, size);
+				return;
+			}
+
 			for (unsigned int i = 0; i < size; i++) {
 				if (c_str[i] == '*') {
 					if (!prev_is_start) {
@@ -246,7 +233,8 @@ namespace Impl {
 			}
 		}
 
-		bool is_real_substrs(CStrLenList &substrs, char * c_str, const unsigned int size)
+		bool is_real_substrs(CStrLenList &substrs, char * c_str, const unsigned int size,
+							 const bool is_strict)
 		{
 			bool is_there = true;
 			unsigned int offset = 0;
@@ -254,6 +242,14 @@ namespace Impl {
 				is_there = false;
 				char *c_sub = p.first;
 				unsigned int len = p.second;
+				if (is_strict) {
+					if (size == len && std::equal(c_str, c_str + size, c_sub)) {
+						is_there = true;
+						break;
+					}
+					continue;
+				}
+
 				while (offset + len <= size) {
 					if (std::equal(c_str + offset, c_str + offset + len, c_sub)) {
 						is_there = true;
@@ -268,6 +264,5 @@ namespace Impl {
 
 			return is_there;
 		}
-		
 	};
 }
