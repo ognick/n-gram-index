@@ -1,6 +1,6 @@
 %module n_gram_index 
 %{
-	#include "Python/n_gram.h"
+    #include "n_gram.h"
 %}
 
 %exception NGram::addLine {
