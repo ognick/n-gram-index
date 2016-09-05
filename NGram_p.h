@@ -20,8 +20,8 @@ namespace Impl {
 		return hash;
 	}
 
-	template<class V, class Consumer>
-	struct n_gramm
+        template<class V, class Consumer>
+        struct n_gram
 	{
 		typedef std::pair<IndexKey, V *> IndexValue;
 		typedef std::list<IndexValue> IndexValueList;
@@ -38,8 +38,8 @@ namespace Impl {
 		Storage storage_;
 		Consumer &consumer_;
 
-		n_gramm(unsigned int n, Consumer &consumer) : n_count_(n), indexes_(n), consumer_(consumer){}
-		~n_gramm()
+                n_gram(unsigned int n, Consumer &consumer) : n_count_(n), indexes_(n), consumer_(consumer){}
+                ~n_gram()
 		{
 			for (auto p: storage_) {
 				V *str = p.second;

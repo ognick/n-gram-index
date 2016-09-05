@@ -1,9 +1,9 @@
-#include "indexer.h"
+#include "n_gram.h"
 #include <iostream>
 
 
 void 
-NGramm::addLine(PyObject *index, PyObject *str)
+NGram::addLine(PyObject *index, PyObject *str)
 {
 	if (!(PyInt_Check(index) && PyString_Check(str))) {
 		throw std::string("Wrong type");
@@ -14,13 +14,13 @@ NGramm::addLine(PyObject *index, PyObject *str)
 
 
 PyObject *
-NGramm::search(PyObject *pattern)
+NGram::search(PyObject *pattern)
 {
 	return search(pattern, false);
 }
 
 PyObject * 
-NGramm::search(PyObject *pattern, const bool isStrict)
+NGram::search(PyObject *pattern, const bool isStrict)
 {
 	if (!PyString_Check(pattern)) {
 		throw std::string("Wrong type");
@@ -35,7 +35,7 @@ NGramm::search(PyObject *pattern, const bool isStrict)
 }
 
 void
-NGramm::delLine(PyObject *index)
+NGram::delLine(PyObject *index)
 {
 	if (!PyInt_Check(index)) {
 		throw std::string("Wrong type");
@@ -45,23 +45,23 @@ NGramm::delLine(PyObject *index)
 }
 
 const int 
-NGramm::size()
+NGram::size()
 {
 	return pimpl_.size();
 }
 
 const int
-NGramm::get_c_string(PyObject * str, char* &ref) const {
+NGram::get_c_string(PyObject * str, char* &ref) const {
 	ref = PyString_AsString(str);
 	return PyString_Size(str);
 };
 
 void
-NGramm::incr_refs(PyObject *str) {
+NGram::incr_refs(PyObject *str) {
 	Py_INCREF(str);
 };
 
 void
-NGramm::decr_refs(PyObject *str) {
+NGram::decr_refs(PyObject *str) {
 	Py_XDECREF(str);
 };

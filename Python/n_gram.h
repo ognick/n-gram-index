@@ -1,12 +1,12 @@
 #include <Python.h>
 #include <list>
-#include "NGramm.h"
+#include "NGram_p.h"
 #include <string>
 
-class NGramm
+class NGram
 {
 	public:
-		NGramm(unsigned int n) : pimpl_(n, *this) { };
+        NGram(unsigned int n) : pimpl_(n, *this) { };
 
 		const int size();
 		void addLine(PyObject *index, PyObject *str);
@@ -18,6 +18,6 @@ class NGramm
 		void incr_refs(PyObject *str);
 		void decr_refs(PyObject *str);
 	private:
-		typedef Impl::n_gramm<PyObject, NGramm> Pimpl;
+        typedef Impl::n_gram<PyObject, NGram> Pimpl;
 		Pimpl pimpl_;
 };

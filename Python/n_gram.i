@@ -1,9 +1,9 @@
-%module indexer
+%module n_gram_index 
 %{
-	#include "indexer.h"
+	#include "Python/n_gram.h"
 %}
 
-%exception NGramm::addLine {
+%exception NGram::addLine {
 	try {
 		$action
 	} catch (std::string &e) {
@@ -12,7 +12,7 @@
 	}
 }
 
-%exception NGramm::delLine {
+%exception NGram::delLine {
 	try {
 		$action
 	} catch (std::string &e) {
@@ -21,7 +21,7 @@
 	}
 }
 
-%exception NGramm::search {
+%exception NGram::search {
 	try {
 		$action
 	} catch (std::exception &e) {
@@ -31,4 +31,4 @@
 }
 
 
-%include "indexer.h"
+%include "n_gram.h"

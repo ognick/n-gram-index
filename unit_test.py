@@ -3,7 +3,7 @@ from random import randint
 import sys
 if len(sys.argv) > 1:
 	sys.path.append(sys.argv[1])
-from indexer import NGramm
+from n_gram_index import NGram
 
 alphabet1 = [chr(i) for i in xrange(65, 123)]
 alphabet2 = [chr(i) for i in xrange(123, 188)]
@@ -26,7 +26,7 @@ def createBadWorld(pattern3):
 
 def test(n):
 	storage = {}
-	index = NGramm(n)
+	index = NGram(n)
 
 	index.addLine(2574, 'Rrrrrrr'.lower())
 	assert index.search('Rrrrrrr'.lower(), True)
