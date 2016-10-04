@@ -6,6 +6,7 @@
 #include <iterator>
 #include <functional>
 #include <vector>
+#include <cstddef>
 
 namespace Impl {
 	typedef unsigned long IndexKey;
